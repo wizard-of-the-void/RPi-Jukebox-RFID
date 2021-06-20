@@ -1,180 +1,132 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Original code found at:
-# https://gist.github.com/DenisFromHR/cc863375a6e19dce359d
-
-"""
-Compiled, mashed and generally mutilated 2014-2015 by Denis Pleic
-Made available under GNU GENERAL PUBLIC LICENSE
-
-# Modified Python I2C library for Raspberry Pi
-# as found on http://www.recantha.co.uk/blog/?p=4849
-# Joined existing 'i2c_lib.py' and 'lcddriver.py' into a single library
-# added bits and pieces from various sources
-# By DenisFromHR (Denis Pleic)
-# 2015-02-10, ver 0.1
-
-"""
-
-# i2c bus (0 -- original Pi, 1 -- Rev 2 Pi)
-I2CBUS = 1
-
-# LCD Address
-ADDRESS = 0x27
-
+import weakref
+import configparser
+import os
+import logging
 import smbus
+import RPi.GPIO as GPIO
 from time import sleep
 
-class i2c_device:
-   def __init__(self, addr, port=I2CBUS):
+# i2c bus (0 -- original Pi, 1 -- Rev 2 Pi)
+I2CBUS = 11
+# Spark Address
+ADDRESS = 0x08
+# Level shifter pin
+ENABLE_PIN = 23
+
+
+class signal_definition:
+   def __init__(self, controller, slotId, red = 0, green = 0, blue = 0 , fade_in = 7, hold = 10, fade_out = 7, state = False):
+      self.controller = weakref.ref(controller)
+      self.slotId = slotId
+      self.red = red
+      self.green = green
+      self.blue = blue
+      self.fade_in = fade_in
+      self.fade_out = fade_out
+      self.hold = hold
+      self.__state = state
+
+   def update(self):
+         self.controller.transmit_signal_to_controller(self.slotId)
+
+   @property
+   def state(self):
+      return self.__state
+
+   @state.setter
+   def state(self, aState):
+      self.__state = bool(aState)
+      self.controller.transmit_states()
+      
+   def data(self):
+      return bytes([self.red, self.green, self.blue, self.fade_in, self.hold, self.fade_out])
+
+class aux_io_controller:
+   # register addresses
+   STATE_ADDR =  0
+   ZERO_ADDR =  1
+   CONTROL_ADDR  =  2
+   BLK_A_ADDR = 3
+   BLK_COUNT = 8
+   BLK_SIZE = 6
+   RESET_FLAG = 0x80
+
+   def __init__(self, addr=ADDRESS, port=I2CBUS, a_enable_pin=ENABLE_PIN):
       self.addr = addr
       self.bus = smbus.SMBus(port)
+      self.enable_pin = a_enable_pin
 
-# Write a single command
-   def write_cmd(self, cmd):
-      self.bus.write_byte(self.addr, cmd)
+      GPIO.setmode(GPIO.BCM)
+      GPIO.setup(self.enable_pin, GPIO.OUT)
+      self.enable_com()
+
+      self.slots = [None] * self.BLK_COUNT
+      for slotId in range(self.BLK_COUNT):
+         self.assign_signal_to_slot(signal_definition(self, slotId), slotId)      
+
+   def assign_signal_to_slot(self, signal, slotId):
+      signal.controller = self
+      self.slots[slotId] = signal
+
+   def get_slot_address(self, slotId):
+      return self.BLK_A_ADDR + self.BLK_SIZE * slotId
+
+   def get_signal(self, slotId):
+      return self.slots[slotId]
+
+   def transmit_signal_to_controller(self, slotId):
+      signal_bytes = self.slots[slotId].data
+      register_address = self.get_slot_address(slotId)
+      self.bus.write_i2c_block_data(self.addr, register_address, signal_bytes)
       sleep(0.0001)
 
-# Write a command and argument
-   def write_cmd_arg(self, cmd, data):
-      self.bus.write_byte_data(self.addr, cmd, data)
+   def transmit_all_signals(self):
+      for slotId in range(self.BLK_COUNT):
+         self.transmit_signal_to_controller(slotId)
+
+   def byte(self, bits):
+      for i in range(0, len(bits)):
+         byte = byte | (bits[i] << i)
+      return bytes(byte)[0]
+
+   def enable_com(self):
+      GPIO.output(self.enable_pin, True)
+
+   def disable_com(self):
+      GPIO.output(self.enable_pin, False)
+
+   def transmit_states(self):
+      slot_states = [None] * self.BLK_COUNT
+      for slotId in range(self.BLK_COUNT):
+         slot_states[slotId] = self.slots[slotId].state()
+
+      self.bus.write_byte_data(self.addr, self.STATE_ADDR, self.byte(slot_states))
       sleep(0.0001)
 
-# Write a block of data
-   def write_block_data(self, cmd, data):
-      self.bus.write_block_data(self.addr, cmd, data)
+   def reset_controller(self):
+      self.bus.write_byte(self.addr, self.RESET_FLAG)
       sleep(0.0001)
 
-# Read a single byte
-   def read(self):
-      return self.bus.read_byte(self.addr)
+   def __del__(self):
+      GPIO.cleanup()
 
-# Read
-   def read_data(self, cmd):
-      return self.bus.read_byte_data(self.addr, cmd)
+if __name__ == "__main__":
 
-# Read a block of data
-   def read_block_data(self, cmd):
-      return self.bus.read_block_data(self.addr, cmd)
+    logging.basicConfig(level='INFO')
+    logger = logging.getLogger()
+    logger.setLevel('INFO')
 
+    config = configparser.ConfigParser(inline_comment_prefixes=";")
+    config_path = os.path.expanduser('/home/pi/RPi-Jukebox-RFID/settings/i2c_led_initial_settings.ini')
+    config.read(config_path)
 
-# commands
-LCD_CLEARDISPLAY = 0x01
-LCD_RETURNHOME = 0x02
-LCD_ENTRYMODESET = 0x04
-LCD_DISPLAYCONTROL = 0x08
-LCD_CURSORSHIFT = 0x10
-LCD_FUNCTIONSET = 0x20
-LCD_SETCGRAMADDR = 0x40
-LCD_SETDDRAMADDR = 0x80
-
-# flags for display entry mode
-LCD_ENTRYRIGHT = 0x00
-LCD_ENTRYLEFT = 0x02
-LCD_ENTRYSHIFTINCREMENT = 0x01
-LCD_ENTRYSHIFTDECREMENT = 0x00
-
-# flags for display on/off control
-LCD_DISPLAYON = 0x04
-LCD_DISPLAYOFF = 0x00
-LCD_CURSORON = 0x02
-LCD_CURSOROFF = 0x00
-LCD_BLINKON = 0x01
-LCD_BLINKOFF = 0x00
-
-# flags for display/cursor shift
-LCD_DISPLAYMOVE = 0x08
-LCD_CURSORMOVE = 0x00
-LCD_MOVERIGHT = 0x04
-LCD_MOVELEFT = 0x00
-
-# flags for function set
-LCD_8BITMODE = 0x10
-LCD_4BITMODE = 0x00
-LCD_2LINE = 0x08
-LCD_1LINE = 0x00
-LCD_5x10DOTS = 0x04
-LCD_5x8DOTS = 0x00
-
-# flags for backlight control
-LCD_BACKLIGHT = 0x08
-LCD_NOBACKLIGHT = 0x00
-
-En = 0b00000100 # Enable bit
-Rw = 0b00000010 # Read/Write bit
-Rs = 0b00000001 # Register select bit
-
-class lcd:
-   #initializes objects and lcd
-   def __init__(self):
-      self.lcd_device = i2c_device(ADDRESS)
-
-      self.lcd_write(0x03)
-      self.lcd_write(0x03)
-      self.lcd_write(0x03)
-      self.lcd_write(0x02)
-
-      self.lcd_write(LCD_FUNCTIONSET | LCD_2LINE | LCD_5x8DOTS | LCD_4BITMODE)
-      self.lcd_write(LCD_DISPLAYCONTROL | LCD_DISPLAYON)
-      self.lcd_write(LCD_CLEARDISPLAY)
-      self.lcd_write(LCD_ENTRYMODESET | LCD_ENTRYLEFT)
-      sleep(0.2)
-
-
-   # clocks EN to latch command
-   def lcd_strobe(self, data):
-      self.lcd_device.write_cmd(data | En | LCD_BACKLIGHT)
-      sleep(.0005)
-      self.lcd_device.write_cmd(((data & ~En) | LCD_BACKLIGHT))
-      sleep(.0001)
-
-   def lcd_write_four_bits(self, data):
-      self.lcd_device.write_cmd(data | LCD_BACKLIGHT)
-      self.lcd_strobe(data)
-
-   # write a command to lcd
-   def lcd_write(self, cmd, mode=0):
-      self.lcd_write_four_bits(mode | (cmd & 0xF0))
-      self.lcd_write_four_bits(mode | ((cmd << 4) & 0xF0))
-
-   # write a character to lcd (or character rom) 0x09: backlight | RS=DR<
-   # works!
-   def lcd_write_char(self, charvalue, mode=1):
-      self.lcd_write_four_bits(mode | (charvalue & 0xF0))
-      self.lcd_write_four_bits(mode | ((charvalue << 4) & 0xF0))
-
-   # put string function with optional char positioning
-   def lcd_display_string(self, string, line=1, pos=0):
-    if line == 1:
-      pos_new = pos
-    elif line == 2:
-      pos_new = 0x40 + pos
-    elif line == 3:
-      pos_new = 0x14 + pos
-    elif line == 4:
-      pos_new = 0x54 + pos
-
-    self.lcd_write(0x80 + pos_new)
-
-    for char in string:
-      self.lcd_write(ord(char), Rs)
-
-   # clear lcd and set to home
-   def lcd_clear(self):
-      self.lcd_write(LCD_CLEARDISPLAY)
-      self.lcd_write(LCD_RETURNHOME)
-
-   # define backlight on/off (lcd.backlight(1); off= lcd.backlight(0)
-   def backlight(self, state): # for state, 1 = on, 0 = off
-      if state == 1:
-         self.lcd_device.write_cmd(LCD_BACKLIGHT)
-      elif state == 0:
-         self.lcd_device.write_cmd(LCD_NOBACKLIGHT)
-
-   # add custom characters (0 - 7)
-   def lcd_load_custom_chars(self, fontdata):
-      self.lcd_write(0x40);
-      for char in fontdata:
-         for line in char:
-            self.lcd_write_char(line)
-
+    devices = get_all_devices(config)
+    print(devices)
+    logger.info('Ready for taking actions')
+    try:
+        pause()
+    except KeyboardInterrupt:
+        pass
+    logger.info('Exiting GPIO Control')      
