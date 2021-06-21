@@ -1,15 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import weakref
-import configparser
-import os
-import logging
 import smbus
 import RPi.GPIO as GPIO
 from time import sleep
 
 # i2c bus (0 -- original Pi, 1 -- Rev 2 Pi)
-I2CBUS = 11
+I2CBUS = 1
 # Spark Address
 ADDRESS = 0x08
 # Level shifter pin
@@ -39,7 +36,7 @@ class signal_definition:
    def state(self, aState):
       self.__state = bool(aState)
       self.controller.transmit_states()
-      
+
    def data(self):
       return bytes([self.red, self.green, self.blue, self.fade_in, self.hold, self.fade_out])
 
@@ -64,7 +61,7 @@ class aux_io_controller:
 
       self.slots = [None] * self.BLK_COUNT
       for slotId in range(self.BLK_COUNT):
-         self.assign_signal_to_slot(signal_definition(self, slotId), slotId)      
+         self.assign_signal_to_slot(signal_definition(self, slotId), slotId)
 
    def assign_signal_to_slot(self, signal, slotId):
       signal.controller = self
@@ -111,22 +108,3 @@ class aux_io_controller:
 
    def __del__(self):
       GPIO.cleanup()
-
-if __name__ == "__main__":
-
-    logging.basicConfig(level='INFO')
-    logger = logging.getLogger()
-    logger.setLevel('INFO')
-
-    config = configparser.ConfigParser(inline_comment_prefixes=";")
-    config_path = os.path.expanduser('/home/pi/RPi-Jukebox-RFID/settings/i2c_led_initial_settings.ini')
-    config.read(config_path)
-
-    devices = get_all_devices(config)
-    print(devices)
-    logger.info('Ready for taking actions')
-    try:
-        pause()
-    except KeyboardInterrupt:
-        pass
-    logger.info('Exiting GPIO Control')      

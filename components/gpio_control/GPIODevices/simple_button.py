@@ -12,7 +12,7 @@ def parse_edge_key(edge):
         edge
     elif edge.lower() == 'falling':
         edge = GPIO.FALLING
-    elif edge.lower() == 'raising':
+    elif edge.lower() == 'rising':
         edge = GPIO.RISING
     elif edge.lower() == 'both':
         edge = GPIO.BOTH
@@ -62,6 +62,11 @@ class SimpleButton:
         self.edge = parse_edge_key(edge)
         self.hold_time = hold_time
         self.hold_repeat = hold_repeat
+        if self.edge == GPIO.FALLING:
+            self.hold_state = GPIO.LOW
+        else:
+            self.hold_state = GPIO.HIGH
+
         self.pull_up = True
         self.pull_up_down = parse_pull_up_down(pull_up_down)
 
@@ -72,11 +77,10 @@ class SimpleButton:
         self._action = action
         GPIO.add_event_detect(self.pin, edge=self.edge, callback=self.callbackFunctionHandler,
                               bouncetime=self.bouncetime)
-        self.callback_with_pin_argument = False
 
     def callbackFunctionHandler(self, *args):
-        if len(args) > 0 and args[0] == self.pin and not self.callback_with_pin_argument:
-            logger.debug('Remove pin argument by callbackFunctionHandler - args before: {}'.format(args))
+        if (len(args) > 0 and args[0] == self.pin):
+            logger.debug('args before: {}'.format(args))
             args = args[1:]
             logger.debug('args after: {}'.format(args))
 
@@ -108,7 +112,7 @@ class SimpleButton:
         # Rise volume as requested
         self.when_pressed(*args)
         # Detect holding of button
-        while checkGpioStaysInState(self.hold_time, self.pin, GPIO.LOW):
+        while checkGpioStaysInState(self.hold_time, self.pin, self.hold_state):
             self.when_pressed(*args)
 
     def __del__(self):
