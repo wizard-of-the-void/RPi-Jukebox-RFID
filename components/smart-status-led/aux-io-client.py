@@ -1,16 +1,23 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import socket
+import configparser
 import sys
 
-HOST, PORT = "localhost", 9999
-data = " ".join(sys.argv[1:])
+BaseConfigPath = "../../settings/aux-io.BaseConfig.ini"
+BaseConfig = configparser.ConfigParser()
+BaseConfig.read(BaseConfigPath)
 
-# SOCK_DGRAM is the socket type to use for UDP sockets
-sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+#data = " ".join(sys.argv[1:])
 
-# As you can see, there is no connect() call; UDP has no connections.
-# Instead, data is directly sent to the recipient via sendto().
-sock.sendto(bytes(data + "\n", "utf-8"), (HOST, PORT))
-received = str(sock.recv(1024), "utf-8")
+def sendAuxIoCommand(command, parameters):
+    HOST, PORT = BaseConfig["connection"]["host"], BaseConfig["connection"].getint("port")
+    # SOCK_DGRAM is the socket type to use for UDP sockets
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.sendto(bytes(command + ";".join(map(str, parameters)) + "\n", "utf-8"), (HOST, PORT))
 
-print("Sent:     {}".format(data))
-print("Received: {}".format(received))
+
+#print("Sent:     {}".format(data))
+#print("Received: {}".format(received))
+sendAuxIoCommand("sig", ["play", 1])

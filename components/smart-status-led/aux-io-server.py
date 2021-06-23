@@ -1,10 +1,22 @@
-#! /usr/bin/python3
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import configparser
 import logging
 import socketserver
-from i2c_led_driver import signal_definition, aux_io_controller
+#from i2c_led_driver import signal_definition, aux_io_controller
 
-i2c_driver = aux_io_controller()
+BaseConfigPath = "../../settings/aux-io.BaseConfig.ini"
+#SignalConfigPath = "../setting/aux-io.SignalConfig.ini"
+
+BaseConfig = configparser.ConfigParser()
+BaseConfig.read(BaseConfigPath)
+
+#SignalConfig = configparser.ConfigParser()
+#SignalConfig.read(SignalConfigPath)
+
+#i2c_driver = aux_io_controller()
+
 
 class MyUDPHandler(socketserver.BaseRequestHandler):
     """
@@ -15,13 +27,16 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
     """
 
     def handle(self):
-        data = self.request[0].strip()
+        data = self.request[0].decode('utf8').strip()
         socket = self.request[1]
-        print("{} wrote:".format(self.client_address[0]))
-        print(data)
-        socket.sendto(data.upper(), self.client_address)
+        command = data[0:3].lower()
+        parameter = data[3:128].strip().split(";")
+        print("{} requested:".format(self.client_address[0]))
+        print(command)
+        print(parameter)
+        socket.sendto(data.upper().encode('utf8'), self.client_address)
 
 if __name__ == "__main__":
-    HOST, PORT = "localhost", 9999
+    HOST, PORT = BaseConfig['connection']['host'], BaseConfig['connection'].getint('port')
     with socketserver.UDPServer((HOST, PORT), MyUDPHandler) as server:
         server.serve_forever()
