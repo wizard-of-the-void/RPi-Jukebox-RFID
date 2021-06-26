@@ -117,9 +117,12 @@ class aux_io_controller:
       self.bus.write_byte_data(self.addr, self.STATE_ADDR, self.byte(slot_states))
       sleep(0.0001)
 
-   def reset_controller(self):
+   def reset_controller(self, hard=False):
       self.bus.write_byte(self.addr, self.RESET_FLAG)
       sleep(0.0001)
+      if hard:
+         for signal in self.slots:
+            signal.state = False
 
    def __del__(self):
       GPIO.cleanup()

@@ -16,8 +16,8 @@ BaseConfig = configparser.ConfigParser()
 BaseConfig.read(BaseConfigPath)
 logging.debug("Base configuration loaded from %s", BaseConfigPath)
 
-#i2c_driver = aux_io_controller()
-#logging.debug("i2c-Driver instanciated")
+i2c_driver = aux_io_controller()
+logging.debug("i2c-Driver instanciated")
 
 class MyUDPHandler(socketserver.BaseRequestHandler):
     """
