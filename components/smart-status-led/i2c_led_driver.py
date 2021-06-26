@@ -1,9 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import configparser
+import logging
 import weakref
 import smbus
 import RPi.GPIO as GPIO
 from time import sleep
+
+SignalConfig = configparser.ConfigParser()
+SignalConfig.read(SignalConfigPath)
+logging.debug("Signal configuration loaded from %s", SignalConfigPath)
 
 # i2c bus (0 -- original Pi, 1 -- Rev 2 Pi)
 I2CBUS = 1
@@ -50,7 +56,7 @@ class aux_io_controller:
    BLK_SIZE = 6
    RESET_FLAG = 0x80
 
-   def __init__(self, addr=ADDRESS, port=I2CBUS, a_enable_pin=ENABLE_PIN):
+   def __init__(self, a_signal_config, addr=ADDRESS, port=I2CBUS, a_enable_pin=ENABLE_PIN):
       self.addr = addr
       self.bus = smbus.SMBus(port)
       self.enable_pin = a_enable_pin
@@ -59,13 +65,22 @@ class aux_io_controller:
       GPIO.setup(self.enable_pin, GPIO.OUT)
       self.enable_com()
 
-      self.slots = [None] * self.BLK_COUNT
-      for slotId in range(self.BLK_COUNT):
-         self.assign_signal_to_slot(signal_definition(self, slotId), slotId)
-
-   def assign_signal_to_slot(self, signal, slotId):
-      signal.controller = self
-      self.slots[slotId] = signal
+      self.slots = [None] * len(a_signal_config.sections())
+      self.names = {}
+      current_slot = 0 
+      for signal_name in a_signal_config.sections():
+         self.slots[current_slot] = signal_definition(self, \
+            current_slot, \
+            red = SignalConfig[signal_name].getint("red"), \
+            green = SignalConfig[signal_name].getint("green"), \
+            blue = SignalConfig[signal_name].getint("blue") , \
+            fade_in = SignalConfig[signal_name].getint("fade_in"), \
+            hold = SignalConfig[signal_name].getint("hold"), \
+            fade_out = SignalConfig[signal_name].getint("fade_out"), \
+            state = SignalConfig[signal_name].getboolean("init_to")), \
+            current_slot)
+         self.names[signal_name] = current_slot
+         current_slot += 1
 
    def get_slot_address(self, slotId):
       return self.BLK_A_ADDR + self.BLK_SIZE * slotId
@@ -80,8 +95,8 @@ class aux_io_controller:
       sleep(0.0001)
 
    def transmit_all_signals(self):
-      for slotId in range(self.BLK_COUNT):
-         self.transmit_signal_to_controller(slotId)
+      for signal in self.slots:
+         signal.update()
 
    def byte(self, bits):
       for i in range(0, len(bits)):
@@ -95,7 +110,7 @@ class aux_io_controller:
       GPIO.output(self.enable_pin, False)
 
    def transmit_states(self):
-      slot_states = [None] * self.BLK_COUNT
+      slot_states = [False] * self.BLK_COUNT
       for slotId in range(self.BLK_COUNT):
          slot_states[slotId] = self.slots[slotId].state()
 

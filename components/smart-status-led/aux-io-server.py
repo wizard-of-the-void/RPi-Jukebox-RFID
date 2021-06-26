@@ -4,19 +4,20 @@
 import configparser
 import logging
 import socketserver
-#from i2c_led_driver import signal_definition, aux_io_controller
+import aux_io_actions
+from i2c_led_driver import signal_definition, aux_io_controller
 
 BaseConfigPath = "../../settings/aux-io.BaseConfig.ini"
-#SignalConfigPath = "../setting/aux-io.SignalConfig.ini"
+SignalConfigPath = "../setting/aux-io.SignalConfig.ini"
+
+logging.basicConfig(filename="../../logs/aux-io-server.log", level=logging.DEBUG, format="%(asctime)s | %(levelname)s | %(message)s")
 
 BaseConfig = configparser.ConfigParser()
 BaseConfig.read(BaseConfigPath)
-
-#SignalConfig = configparser.ConfigParser()
-#SignalConfig.read(SignalConfigPath)
+logging.debug("Base configuration loaded from %s", BaseConfigPath)
 
 #i2c_driver = aux_io_controller()
-
+#logging.debug("i2c-Driver instanciated")
 
 class MyUDPHandler(socketserver.BaseRequestHandler):
     """
@@ -27,16 +28,27 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
     """
 
     def handle(self):
-        data = self.request[0].decode('utf8').strip()
+        data = self.request[0].decode("utf8").strip()
         socket = self.request[1]
-        command = data[0:3].lower()
-        parameter = data[3:128].strip().split(";")
+        parameter = data[0:128].strip().split(";")
+        command = parameter.pop(0)
+
+        if hasattr(aux_io_actions, command):
+            try:
+                logging.debug("Calling the command %s", command)
+                action = getattr(aux_io_actions, command)
+                action(i2c_driver, parameter)
+            except:
+                logging.exception("Calling the command %s failed!", command)
+        else:
+            logging.error("Unknown command %s requested!", command)
+
         print("{} requested:".format(self.client_address[0]))
         print(command)
         print(parameter)
-        socket.sendto(data.upper().encode('utf8'), self.client_address)
+        socket.sendto(data.upper().encode("utf8"), self.client_address)
 
 if __name__ == "__main__":
-    HOST, PORT = BaseConfig['connection']['host'], BaseConfig['connection'].getint('port')
+    HOST, PORT = BaseConfig["connection"]["host"], BaseConfig["connection"].getint("port")
     with socketserver.UDPServer((HOST, PORT), MyUDPHandler) as server:
         server.serve_forever()

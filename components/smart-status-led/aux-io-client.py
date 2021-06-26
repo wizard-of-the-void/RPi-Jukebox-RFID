@@ -11,13 +11,13 @@ BaseConfig.read(BaseConfigPath)
 
 #data = " ".join(sys.argv[1:])
 
-def sendAuxIoCommand(command, parameters):
+def sendAuxIoCommand(parameters):
     HOST, PORT = BaseConfig["connection"]["host"], BaseConfig["connection"].getint("port")
     # SOCK_DGRAM is the socket type to use for UDP sockets
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.sendto(bytes(command + ";".join(map(str, parameters)) + "\n", "utf-8"), (HOST, PORT))
+    sock.sendto(bytes(";".join(map(str, parameters)) + "\n", "utf-8"), (HOST, PORT))
 
 
 #print("Sent:     {}".format(data))
 #print("Received: {}".format(received))
-sendAuxIoCommand("sig", ["play", 1])
+sendAuxIoCommand(["init_AuxController"])
