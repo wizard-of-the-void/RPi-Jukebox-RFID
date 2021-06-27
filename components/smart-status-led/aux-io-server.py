@@ -9,11 +9,15 @@ from i2c_led_driver import signal_definition, aux_io_controller
 
 BaseConfigPath = "../../settings/aux-io.BaseConfig.ini"
 
-logging.basicConfig(filename="../../logs/aux-io-server.log", level=logging.DEBUG, format="%(asctime)s | %(levelname)s | %(message)s")
+for handler in logging.root.handlers[:]:
+    logging.root.removeHandler(handler)
+logging.basicConfig(filename="../../logs/aux-io-server.log",level=logging.DEBUG, format="%(asctime)s | %(levelname)s | %(message)s")
+#logging.basicConfig(filename="/home/pi/RPi-Jukebox-RFID/logs/aux-io-server.log", encoding='utf-8',level=logging.DEBUG, format="%(asctime)s | %(levelname)s | %(message)s")
 
 BaseConfig = configparser.ConfigParser()
 BaseConfig.read(BaseConfigPath)
 logging.debug("Base configuration loaded from %s", BaseConfigPath)
+logging.debug(BaseConfig.sections())
 
 i2c_driver = aux_io_controller()
 logging.debug("i2c-Driver instanciated")
@@ -31,6 +35,10 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
         parameter = data.strip().split(";")
         command = parameter.pop(0)
 
+        logging.debug("{} requested:".format(self.client_address[0]))
+        logging.debug("Action: %s", command)
+        logging.debug("With parameters: %s", parameter)
+
         if hasattr(aux_io_actions, command):
             try:
                 logging.debug("Calling the command %s", command)
@@ -41,9 +49,6 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
         else:
             logging.error("Unknown command %s requested!", command)
 
-        logging.debug("{} requested:".format(self.client_address[0]))
-        logging.debug("Action: %s", command)
-        logging.debug("With parameters: %s", parameter)
 
 if __name__ == "__main__":
     HOST, PORT = BaseConfig["connection"]["host"], BaseConfig["connection"].getint("port")

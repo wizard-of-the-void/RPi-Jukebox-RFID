@@ -9,7 +9,7 @@ from time import sleep
 import math
 
 
-SignalConfigPath = "../setting/aux-io.SignalConfig.ini"
+SignalConfigPath = "../../settings/aux-io.SignalConfig.ini"
 SignalConfig = configparser.ConfigParser()
 SignalConfig.read(SignalConfigPath)
 logging.debug("Signal configuration loaded from %s", SignalConfigPath)
@@ -25,7 +25,7 @@ TIME_SCALE = 128
 
 class signal_definition:
    def __init__(self, controller, slotId, red = 0, green = 0, blue = 0 , fade_in = 7, hold = 10, fade_out = 7, state = False):
-      self.controller = weakref.ref(controller)
+      self.controller = controller #weakref.ref(controller)
       self.slotId = slotId
       self.red = red
       self.green = green
@@ -70,12 +70,14 @@ class aux_io_controller:
       GPIO.setup(self.enable_pin, GPIO.OUT)
       self.enable_com()
 
+      logging.debug("start populating slots...")
+      logging.debug(a_signal_config.sections())
       self.slots = [None] * len(a_signal_config.sections())
       self.names = {}
       current_slot = 0 
       for signal_name in a_signal_config.sections():
-         self.slots[current_slot] = signal_definition(self, \
-            current_slot, \
+         self.slots[current_slot] = signal_definition( controller = self, \
+            slotId = current_slot, \
             red = SignalConfig[signal_name].getint("red"), \
             green = SignalConfig[signal_name].getint("green"), \
             blue = SignalConfig[signal_name].getint("blue") , \
@@ -84,6 +86,7 @@ class aux_io_controller:
             fade_out = SignalConfig[signal_name].getint("fade_out"), \
             state = SignalConfig[signal_name].getboolean("init_to"))
          self.names[signal_name] = current_slot
+         logging.debug("Stored %s in slot %s", signal_name, current_slot)
          current_slot += 1
       
       self.transmission_lock = False
