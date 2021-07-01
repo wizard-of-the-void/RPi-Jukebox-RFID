@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# import types
 import configparser
 import logging
 import weakref
@@ -44,11 +45,18 @@ class signal_definition:
 
    @state.setter
    def state(self, aState):
-      self.__state = bool(aState)
+      if isinstance(aState, bool):
+         self.__state = aState
+      elif aState.lower() == "true" :
+         self.__state = True
+      else :
+         self.__state = False
+      logging.debug(aState)
+      logging.debug(self.__state)
       self.controller.transmit_states()
 
    def data(self):
-      return bytes([self.red, self.green, self.blue, self.fade_in, self.hold, self.fade_out])
+      return [self.red, self.green, self.blue, self.fade_in, self.hold, self.fade_out]
 
 class aux_io_controller:
    # register addresses
@@ -88,7 +96,6 @@ class aux_io_controller:
          self.names[signal_name] = current_slot
          logging.debug("Stored %s in slot %s", signal_name, current_slot)
          current_slot += 1
-      
       self.transmission_lock = False
 
    def get_slot_address(self, slotId):
@@ -101,8 +108,10 @@ class aux_io_controller:
       return self.slots[self.names[signal_name]]
 
    def transmit_signal_to_controller(self, slotId):
-      signal_bytes = self.slots[slotId].data
+      signal_bytes = self.slots[slotId].data()
       register_address = self.get_slot_address(slotId)
+      logging.debug(signal_bytes)
+      logging.debug(register_address)
       self.bus.write_i2c_block_data(self.addr, register_address, signal_bytes)
       sleep(0.0001)
 
@@ -111,9 +120,13 @@ class aux_io_controller:
          signal.update()
 
    def byte(self, bits):
-      for i in range(0, len(bits)):
-         byte = byte | (bits[i] << i)
-      return bytes(byte)[0]
+      bool_val = list(map(int, bits))
+      byte_val = 0
+      for i in range(self.BLK_COUNT):
+         byte_val += (2 ** i) * bool_val[i]
+      logging.debug(bool_val)
+      logging.debug(byte_val)
+      return byte_val
 
    def enable_com(self):
       GPIO.output(self.enable_pin, True)
@@ -134,7 +147,7 @@ class aux_io_controller:
       if not self.transmission_lock:
          slot_states = [False] * self.BLK_COUNT
          for slotId in range(self.BLK_COUNT):
-            slot_states[slotId] = self.slots[slotId].state()
+            slot_states[slotId] = self.slots[slotId].state
 
          self.bus.write_byte_data(self.addr, self.STATE_ADDR, self.byte(slot_states))
          sleep(0.0001)
