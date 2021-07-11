@@ -41,6 +41,10 @@ mpgvolume=$((32768*${AUDIOVOLSTARTUP}/100))
 echo "${mpgvolume} is the mpg123 startup volume"
 /usr/bin/mpg123 -f -${mpgvolume} /home/pi/RPi-Jukebox-RFID/shared/startupsound.mp3
 
+#############
+#init aux io 
+/home/pi/RPi-Jukebox-RFID/components/smart-status-led/start-signal.py
+
 #######################
 # re-scan music library
 mpc rescan 

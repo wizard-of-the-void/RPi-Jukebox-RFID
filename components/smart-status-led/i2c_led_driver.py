@@ -22,7 +22,7 @@ ADDRESS = 0x08
 # Level shifter pin
 ENABLE_PIN = 23
 # multiplier for timings
-TIME_SCALE = 128
+TIME_SCALE = 64
 
 class signal_definition:
    def __init__(self, controller, slotId, red = 0, green = 0, blue = 0 , fade_in = 7, hold = 10, fade_out = 7, state = False):
@@ -63,7 +63,7 @@ class aux_io_controller:
    STATE_ADDR =  0
    ZERO_ADDR =  1
    CONTROL_ADDR  =  2
-   BLK_A_ADDR = 3
+   BLK_A_ADDR = 6
    BLK_COUNT = 8
    BLK_SIZE = 6
    RESET_FLAG = 0x80

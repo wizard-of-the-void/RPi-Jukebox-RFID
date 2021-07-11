@@ -3,6 +3,5 @@
 
 import aux_io_client
 
-aux_io_client.sendAuxIoCommand(["set_SignalState", "pause", True])
 aux_io_client.sendAuxIoCommand(["set_SignalState", "stop", False])
-aux_io_client.sendAuxIoCommand(["set_SignalState", "play", False])
+aux_io_client.sendAuxIoCommand(["toggle_SignalState", "pause", "play", False, True])

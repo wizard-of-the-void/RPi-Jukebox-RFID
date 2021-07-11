@@ -3,8 +3,12 @@
 
 import socket
 import configparser
+from pathlib import Path
 
-BaseConfigPath = "../../settings/aux-io.BaseConfig.ini"
+source_file = Path(__file__)
+base_path = source_file.parent.parent.parent
+
+BaseConfigPath = base_path / "settings" / "aux-io.BaseConfig.ini"
 BaseConfig = configparser.ConfigParser()
 BaseConfig.read(BaseConfigPath)
 

@@ -11,7 +11,7 @@ BaseConfigPath = "../../settings/aux-io.BaseConfig.ini"
 
 for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)
-logging.basicConfig(filename="../../logs/aux-io-server.log",level=logging.DEBUG, format="%(asctime)s | %(levelname)s | %(message)s")
+logging.basicConfig(filename="../../logs/aux-io-server.log",level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
 #logging.basicConfig(filename="/home/pi/RPi-Jukebox-RFID/logs/aux-io-server.log", encoding='utf-8',level=logging.DEBUG, format="%(asctime)s | %(levelname)s | %(message)s")
 
 BaseConfig = configparser.ConfigParser()

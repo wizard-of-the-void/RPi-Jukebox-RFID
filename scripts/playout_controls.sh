@@ -571,6 +571,7 @@ case $COMMAND in
         #    sudo rm $AUDIOFOLDERSPATH/playing.txt
         #fi
         if [ "${DEBUG_playout_controls_sh}" == "TRUE" ]; then echo "remove playing.txt" >> ${PATHDATA}/../logs/debug.log; fi
+	${PATHDATA}/../components/smart-status-led/audio-stop-signal.py
         ;;
     playerstopafter)
         if [ "${DEBUG_playout_controls_sh}" == "TRUE" ]; then echo "   ${COMMAND}" >> ${PATHDATA}/../logs/debug.log; fi
@@ -668,6 +669,7 @@ case $COMMAND in
             rm -f $VOLFILE
         fi
         mpc toggle
+	${PATHDATA}/../components/smart-status-led/audio-pause-signal.py
         ;;
     playerpauseforce)
         # pause current track with optional delay
@@ -708,6 +710,7 @@ case $COMMAND in
             #${PATHDATA}/resume_play.sh -c=resume -v=$VALUE
             mpc play $VALUE
         fi
+	${PATHDATA}/../components/smart-status-led/audio-play-signal.py
         ;;
     playerremove)
         # remove selected song position
@@ -928,12 +931,14 @@ case $COMMAND in
     enablewifi)
         if [ "${DEBUG_playout_controls_sh}" == "TRUE" ]; then echo "   ${COMMAND}" >> ${PATHDATA}/../logs/debug.log; fi
         rfkill unblock wifi
+	${PATHDATA}/../components/smart-status-led/wlan-start-signal.py
         ;;
     disablewifi)
         if [ "${DEBUG_playout_controls_sh}" == "TRUE" ]; then echo "   ${COMMAND}" >> ${PATHDATA}/../logs/debug.log; fi
         # see https://forum-raspberrypi.de/forum/thread/25696-bluetooth-und-wlan-deaktivieren/#pid226072 seems to disable wifi,
         # as good as it gets
         rfkill block wifi
+	${PATHDATA}/../components/smart-status-led/wlan-stop-signal.py
         ;;
     togglewifi)
         if [ "${DEBUG_playout_controls_sh}" == "TRUE" ]; then echo "   ${COMMAND}" >> ${PATHDATA}/../logs/debug.log; fi
@@ -949,10 +954,12 @@ case $COMMAND in
             if [ "${DEBUG_playout_controls_sh}" == "TRUE" ]; then echo "   Wifi will now be deactivated" >> ${PATHDATA}/../logs/debug.log; fi
             echo "Wifi will now be deactivated"
             rfkill block wifi
+	    ${PATHDATA}/../components/smart-status-led/wlan-stop-signal.py
         else
             if [ "${DEBUG_playout_controls_sh}" == "TRUE" ]; then echo "   Wifi will now be activated" >> ${PATHDATA}/../logs/debug.log; fi
             echo "Wifi will now be activated"
             rfkill unblock wifi
+            ${PATHDATA}/../components/smart-status-led/wlan-start-signal.py
         fi
         ;;
     recordstart)
