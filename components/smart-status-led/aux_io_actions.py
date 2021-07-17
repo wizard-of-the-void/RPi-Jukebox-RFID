@@ -21,7 +21,8 @@ def toggle_SignalState(i2c_driver, parameters):
          i2c_driver.get_signal_by_name(parameters[0]).state = parameters[2]
          i2c_driver.get_signal_by_name(parameters[1]).state = parameters[3]
     else:
-        i2c_driver.get_signal_by_name(parameters[0]).state = not i2c_driver.get_signal_by_name(parameters[0]).state 
+        i2c_driver.get_signal_by_name(parameters[0]).state = not i2c_driver.get_signal_by_name(parameters[0]).state
+        i2c_driver.get_signal_by_name(parameters[1]).state = not i2c_driver.get_signal_by_name(parameters[1]).state 
 
 def reset_AuxController(i2c_driver, parameters):
     i2c_driver.reset_controller(bool(parameters[0]))

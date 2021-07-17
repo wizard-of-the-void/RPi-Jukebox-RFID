@@ -597,6 +597,7 @@ case $COMMAND in
         fi
 
         mpc next
+        ${PATHDATA}/../components/smart-status-led/audio-play-signal.py
         ;;
     playerprev)
         # play previous track in playlist (==folder)
@@ -612,6 +613,7 @@ case $COMMAND in
         fi
 
         mpc prev
+        ${PATHDATA}/../components/smart-status-led/audio-play-signal.py
         ;;
     playerprevchapter)
         CURRENT_SONG_ELAPSED_MS=$(sec_to_ms "$CURRENT_SONG_ELAPSED")
@@ -783,6 +785,7 @@ case $COMMAND in
             rm -f $VOLFILE
         fi
         mpc seek 0
+        ${PATHDATA}/../components/smart-status-led/audio-play-signal.py
         ;;
     playerrepeat)
         if [ "${DEBUG_playout_controls_sh}" == "TRUE" ]; then echo "   ${COMMAND} value:${VALUE}" >> ${PATHDATA}/../logs/debug.log; fi
@@ -865,6 +868,7 @@ case $COMMAND in
         if [ "${DEBUG_playout_controls_sh}" == "TRUE" ]; then echo "  VAR Latest_Folder_Played: ${FOLDER}" >> ${PATHDATA}/../logs/debug.log; fi
         if [ "${DEBUG_playout_controls_sh}" == "TRUE" ]; then echo "  # end playout_controls.sh playlistaddplay" >> ${PATHDATA}/../logs/debug.log; fi
 
+        ${PATHDATA}/../components/smart-status-led/audio-play-signal.py
         # OLD VERSION (pre 20190302 - delete once the new version really seems to work):
         # call shuffle_check HERE to enable/disable folder-based shuffling
         # (mpc shuffle is different to random, because when you shuffle before playing,
@@ -892,6 +896,7 @@ case $COMMAND in
             rm -f $VOLFILE
         fi
         mpc play
+        ${PATHDATA}/../components/smart-status-led/audio-play-signal.py
         ;;
      playlistreset)
         if [ -e $PATHDATA/../shared/audiofolders/$FOLDERPATH/lastplayed.dat ]
@@ -899,6 +904,7 @@ case $COMMAND in
            echo "" > $PATHDATA/../shared/audiofolders/$FOLDERPATH/lastplayed.dat
         fi
         mpc play 1
+        ${PATHDATA}/../components/smart-status-led/audio-play-signal.py
         ;;
     playsinglefile)
         if [ "${DEBUG_playout_controls_sh}" == "TRUE" ]; then echo "   ${COMMAND} value:${VALUE}" >> ${PATHDATA}/../logs/debug.log; fi
@@ -915,6 +921,7 @@ case $COMMAND in
             rm -f $VOLFILE
         fi
         mpc play
+        ${PATHDATA}/../components/smart-status-led/audio-play-signal.py
         ;;
     setidletime)
         if [ "${DEBUG_playout_controls_sh}" == "TRUE" ]; then echo "   ${COMMAND} value:${VALUE}" >> ${PATHDATA}/../logs/debug.log; fi
