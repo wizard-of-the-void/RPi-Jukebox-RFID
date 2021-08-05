@@ -11,7 +11,8 @@ def init_AuxController(i2c_driver, parameters):
 
 def set_HaltState(i2c_driver, parameters):
     i2c_driver.set_all_states(False)
-    i2c_driver.get_signal_by_name("halt").state = True
+    i2c_driver.get_signal_by_name("halt_1").state = True
+#    i2c_driver.get_signal_by_name("halt_2").state = True
 
 def set_SignalState(i2c_driver, parameters):
     i2c_driver.get_signal_by_name(parameters[0]).state = parameters[1]

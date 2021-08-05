@@ -213,6 +213,7 @@ case $COMMAND in
         sleep 1
         /usr/bin/mpg123 ${PATHDATA}/../shared/shutdownsound.mp3
         sleep 3
+        ${PATHDATA}/../components/smart-status-led/halt-signal.py
         ${POWEROFFCMD}
         ;;
     shutdownsilent)
@@ -237,6 +238,7 @@ case $COMMAND in
         #remove shuffle mode if active
         SHUFFLE_STATUS=$(echo -e status\\nclose | nc -w 1 localhost 6600 | grep -o -P '(?<=random: ).*')
         if [ "$SHUFFLE_STATUS" == 1 ] ; then  mpc random off; fi
+        ${PATHDATA}/../components/smart-status-led/halt-signal.py
         ${POWEROFFCMD}
         ;;
     shutdownafter)
@@ -939,6 +941,8 @@ case $COMMAND in
         if [ "${DEBUG_playout_controls_sh}" == "TRUE" ]; then echo "   ${COMMAND}" >> ${PATHDATA}/../logs/debug.log; fi
         rfkill unblock wifi
 	${PATHDATA}/../components/smart-status-led/wlan-start-signal.py
+        echo "rfkill block wifi" | at -q s now + 30 minute
+        echo "${PATHDATA}/../components/smart-status-led/wlan-stop-signal.py" | at -q s now + 30 minutes
         ;;
     disablewifi)
         if [ "${DEBUG_playout_controls_sh}" == "TRUE" ]; then echo "   ${COMMAND}" >> ${PATHDATA}/../logs/debug.log; fi
@@ -967,6 +971,8 @@ case $COMMAND in
             echo "Wifi will now be activated"
             rfkill unblock wifi
             ${PATHDATA}/../components/smart-status-led/wlan-start-signal.py
+            echo "rfkill block wifi" | at -q s now + 30 minute
+            echo "${PATHDATA}/../components/smart-status-led/wlan-stop-signal.py" | at -q s now + 30 minute
         fi
         ;;
     recordstart)

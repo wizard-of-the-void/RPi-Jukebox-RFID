@@ -44,6 +44,11 @@ echo "${mpgvolume} is the mpg123 startup volume"
 #############
 #init aux io 
 /home/pi/RPi-Jukebox-RFID/components/smart-status-led/start-signal.py
+rfkill unblock wifi
+${PATHDATA}/../components/smart-status-led/wlan-start-signal.py
+echo "rfkill block wifi" | at -q s now + 30 minute
+echo "${PATHDATA}/../components/smart-status-led/wlan-stop-signal.py" | at -q s now + 30 minutes
+
 
 #######################
 # re-scan music library
